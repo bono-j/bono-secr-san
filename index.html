@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Family Secret Santa</title>
+<style>
+:root {
+  /* Layout: one narrow phone-first column; a two-way switch (family reveal / organizer draw); the answer is written on a paper gift tag. */
+  --bg: #edf2ee;
+  --surface: #ffffff;
+  --ink: #16241d;
+  --muted: #53645a;
+  --line: #cfdad3;
+  --pine: #1d5a41;
+  --pine-ink: #ffffff;
+  --berry: #ab2638;
+  --tag: #fff8ea;
+  --tag-ink: #2b2115;
+  --tag-line: #e2d2b3;
+  --tag-name: #a3192c;
+  --font-display: ui-rounded, "SF Pro Rounded", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-hand: "Bradley Hand", "Segoe Print", "Snell Roundhand", cursive;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1612;
+    --surface: #15221b;
+    --ink: #e5eee8;
+    --muted: #9cb0a4;
+    --line: #2a3b32;
+    --pine: #6cc39b;
+    --pine-ink: #0a1912;
+    --berry: #f27f8c;
+    --tag: #efe5cf;
+    --tag-ink: #2b2115;
+    --tag-line: #cdbb98;
+    --tag-name: #9e1a2c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1612;
+  --surface: #15221b;
+  --ink: #e5eee8;
+  --muted: #9cb0a4;
+  --line: #2a3b32;
+  --pine: #6cc39b;
+  --pine-ink: #0a1912;
+  --berry: #f27f8c;
+  --tag: #efe5cf;
+  --tag-ink: #2b2115;
+  --tag-line: #cdbb98;
+  --tag-name: #9e1a2c;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+main {
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 28px 16px 56px;
+  display: grid;
+  gap: 22px;
+}
+h1, h2 {
+  font-family: var(--font-display);
+  line-height: 1.1;
+  margin: 0;
+  text-wrap: balance;
+}
+h1 { font-size: clamp(2.1rem, 9vw, 2.75rem); font-weight: 800; letter-spacing: -0.02em; }
+h1 span { color: var(--berry); }
+h2 { font-size: 1.45rem; font-weight: 700; }
+p { margin: 0; }
+.lede { color: var(--muted); max-width: 60ch; }
+header { display: grid; gap: 8px; }
+
+/* Switch */
+.switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.switch button {
+  font: 700 0.98rem/1.2 var(--font-body);
+  min-height: 46px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 8px 10px;
+}
+.switch button[aria-selected="true"] { background: var(--pine); color: var(--pine-ink); }
+
+.panel { display: grid; gap: 18px; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 20px 18px;
+  display: grid;
+  gap: 16px;
+}
+
+/* Forms */
+form { display: grid; gap: 14px; }
+.field { display: grid; gap: 6px; }
+label { font-weight: 700; }
+.hint { color: var(--muted); font-size: 0.93rem; }
+input[type="text"], input[type="url"], textarea {
+  font: 400 1.05rem/1.4 var(--font-body);
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--ink);
+}
+textarea { resize: vertical; min-height: 11rem; }
+#code-input { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; letter-spacing: 0.02em; }
+input::placeholder, textarea::placeholder { color: var(--muted); opacity: 0.75; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 420px) { .row { grid-template-columns: 1fr; } }
+
+button { font-family: var(--font-body); }
+.btn {
+  font-weight: 700;
+  font-size: 1.05rem;
+  min-height: 50px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+}
+.btn-primary { background: var(--pine); color: var(--pine-ink); }
+.btn-primary:hover { filter: brightness(1.08); }
+.btn-quiet { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn-danger { background: transparent; color: var(--berry); border-color: currentColor; }
+.btn-sm { min-height: 44px; font-size: 0.95rem; padding: 8px 14px; }
+:focus-visible { outline: 3px solid var(--berry); outline-offset: 2px; }
+
+.error {
+  color: var(--berry);
+  font-weight: 700;
+  border-left: 4px solid var(--berry);
+  padding: 4px 0 4px 12px;
+}
+
+/* Gift tag */
+.tag-wrap { display: grid; justify-items: center; padding: 6px 0 2px; }
+.tag {
+  position: relative;
+  width: min(100%, 25rem);
+  min-height: 11.5rem;
+  background: var(--tag);
+  color: var(--tag-ink);
+  clip-path: polygon(15% 0, 100% 0, 100% 100%, 15% 100%, 0 50%);
+  padding: 22px 22px 22px calc(15% + 22px);
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  transform: rotate(-1.5deg);
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.14));
+}
+.tag::before {
+  content: "";
+  position: absolute;
+  left: 9%;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: inset 0 0 0 2px var(--tag-line);
+}
+.tag::after {
+  content: "";
+  position: absolute;
+  inset: 9px 9px 9px calc(15% + 4px);
+  border: 1.5px dashed var(--tag-line);
+  border-radius: 6px;
+  pointer-events: none;
+}
+.tag-to { font-size: 0.95rem; }
+.tag-name {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: clamp(2.6rem, 12vw, 3.4rem);
+  line-height: 1.05;
+  color: var(--tag-name);
+  overflow-wrap: anywhere;
+}
+.tag.is-empty .tag-name { color: var(--tag-line); }
+.tag-note { font-size: 0.88rem; opacity: 0.75; }
+.tag.is-revealed { animation: pop 420ms cubic-bezier(.2,.9,.3,1.3); }
+@keyframes pop { from { transform: rotate(-6deg) scale(0.92); } to { transform: rotate(-1.5deg) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .tag.is-revealed { animation: none; } }
+
+/* Results */
+.status-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.count {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 0.93rem;
+}
+.count.is-done { background: var(--pine); color: var(--pine-ink); border-color: var(--pine); }
+.msgs { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.msg {
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--berry);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: grid;
+  gap: 8px;
+  background: var(--surface);
+}
+.msg.is-sent { border-left-color: var(--pine); }
+.msg-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.msg-name { font-weight: 700; font-size: 1.08rem; overflow-wrap: anywhere; }
+.msg-code {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.86rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.msg-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.check { display: inline-flex; align-items: center; gap: 8px; font-weight: 400; cursor: pointer; min-height: 44px; }
+.check input { width: 22px; height: 22px; accent-color: var(--pine); }
+.msg textarea { min-height: 9rem; font-size: 0.95rem; }
+.fallback-note { font-size: 0.9rem; color: var(--muted); }
+
+.howto { margin: 0; padding-left: 1.3rem; display: grid; gap: 6px; color: var(--muted); }
+.howto strong { color: var(--ink); }
+footer { color: var(--muted); font-size: 0.88rem; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Secret <span>Santa</span></h1>
+    <p class="lede">Draw names for the family. No sign-ups and nothing saved online. Each person sees only who <em>they</em> are buying for.</p>
+  </header>
+
+  <div class="switch" role="tablist" aria-label="Choose what you want to do">
+    <button type="button" role="tab" id="tab-reveal" aria-controls="panel-reveal" aria-selected="true">I got a code</button>
+    <button type="button" role="tab" id="tab-organize" aria-controls="panel-organize" aria-selected="false">I'm organizing</button>
+  </div>
+
+  <!-- FAMILY: reveal -->
+  <section class="panel" id="panel-reveal" role="tabpanel" aria-labelledby="tab-reveal">
+    <div class="card">
+      <h2>Who are you buying for?</h2>
+      <form id="reveal-form" novalidate>
+        <div class="field">
+          <label for="code-input">Paste the code you were sent</label>
+          <input type="text" id="code-input" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="SANTA-XXXX-XXXX-XXXX">
+        </div>
+        <button type="submit" class="btn btn-primary">Show my person</button>
+      </form>
+      <p class="error" id="reveal-error" role="alert" hidden></p>
+    </div>
+
+    <div class="tag-wrap">
+      <div class="tag is-empty" id="tag" aria-live="polite">
+        <p class="tag-to" id="tag-to">Your person's name will appear here</p>
+        <p class="tag-name" id="tag-name">?</p>
+        <p class="tag-note" id="tag-note">Only you can see it.</p>
+      </div>
+    </div>
+    <button type="button" class="btn btn-quiet" id="hide-btn" hidden>Hide the name</button>
+  </section>
+
+  <!-- ORGANIZER: draw -->
+  <section class="panel" id="panel-organize" role="tabpanel" aria-labelledby="tab-organize" hidden>
+    <div class="card" id="setup">
+      <h2>Draw the names</h2>
+      <form id="draw-form" novalidate>
+        <div class="field">
+          <label for="names">Who's playing?</label>
+          <p class="hint" id="names-hint">One person per line. Put couples on the same line with a comma between them, so they won't draw each other.</p>
+          <textarea id="names" rows="8" aria-describedby="names-hint" placeholder="Nonna Rita&#10;Marco, Giulia&#10;Luca&#10;Sara, Tommaso&#10;Zia Anna"></textarea>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="budget">Budget <span class="hint">(optional)</span></label>
+            <input type="text" id="budget" placeholder="€30">
+          </div>
+          <div class="field">
+            <label for="when">Gift exchange <span class="hint">(optional)</span></label>
+            <input type="text" id="when" placeholder="24 Dec at Nonna's">
+          </div>
+        </div>
+        <div class="field">
+          <label for="link">Link to this page</label>
+          <input type="url" id="link" placeholder="Paste this page's share link">
+          <p class="hint">Goes into each message so people know where to open their code.</p>
+        </div>
+        <button type="submit" class="btn btn-primary">Draw names</button>
+        <p class="error" id="draw-error" role="alert" hidden></p>
+      </form>
+    </div>
+
+    <div class="card" id="results" hidden>
+      <div class="status-line">
+        <h2>Names are drawn</h2>
+        <span class="count" id="count">0 of 0 sent</span>
+      </div>
+      <ol class="howto">
+        <li>Tap <strong>Copy message</strong> for a person.</li>
+        <li>Paste it in a <strong>private</strong> chat with that person only.</li>
+        <li>Tick <strong>Sent</strong> and move to the next one.</li>
+      </ol>
+      <ul class="msgs" id="msgs"></ul>
+      <p class="hint">The messages only hold a scrambled code, so you can play too. Just don't open anyone else's code.</p>
+      <button type="button" class="btn btn-danger" id="reset-btn">Start over</button>
+      <p class="hint" id="reset-warning" hidden>Tap again to throw away this draw. If you've already sent codes, tell everyone to ignore them.</p>
+    </div>
+  </section>
+
+  <footer>Everything happens on your own phone or computer. Names are never sent anywhere.</footer>
+</main>
+
+<script>
+/* ==CORE== */
+const SS = (() => {
+  "use strict";
+  const ALPH = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"; // Crockford base32: no I, L, O, U
+  const KEY = 0x5A17C0DE;
+  const MAX_NAME = 40;
+
+  function randInt(k) {
+    const limit = Math.floor(0x100000000 / k) * k;
+    const a = new Uint32Array(1);
+    let x;
+    do { crypto.getRandomValues(a); x = a[0]; } while (x >= limit);
+    return x % k;
+  }
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = randInt(i + 1);
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function parsePeople(text) {
+    const people = [];
+    String(text || "").split(/\r?\n/).forEach((line, group) => {
+      line.split(/\s*(?:[,;&+\/]|\band\b)\s*/i)
+        .map(s => s.replace(/\s+/g, " ").trim())
+        .filter(Boolean)
+        .forEach(name => people.push({ name, group }));
+    });
+    if (people.length < 3) return { error: "Add at least 3 people to make a draw." };
+    const seen = new Set();
+    for (const p of people) {
+      if (p.name.length > MAX_NAME) return { error: `"${p.name.slice(0, 20)}…" is too long. Keep names under ${MAX_NAME} letters.` };
+      const k = p.name.toLocaleLowerCase();
+      if (seen.has(k)) return { error: `"${p.name}" is on the list twice. If they're two different people, add an initial, like "${p.name} B."` };
+      seen.add(k);
+    }
+    const sizes = {};
+    people.forEach(p => { sizes[p.group] = (sizes[p.group] || 0) + 1; });
+    const biggest = Math.max(...Object.values(sizes));
+    if (biggest * 2 > people.length) {
+      return { error: "One line holds more than half of the players, so they'd have no one left to draw. Split that line, or add more people." };
+    }
+    return { people };
+  }
+
+  // Returns receiver index for each giver, or null.
+  function draw(people) {
+    const n = people.length;
+    const ok = (g, r) => g !== r && people[g].group !== people[r].group;
+    const idx = [...Array(n).keys()];
+    for (let t = 0; t < 1500; t++) {
+      const p = shuffle(idx.slice());
+      if (p.every((r, g) => ok(g, r))) return p;
+    }
+    // Tight constraints: randomized backtracking (always finds one if it exists).
+    const res = new Array(n), used = new Array(n).fill(false);
+    const order = shuffle(idx.slice());
+    function step(k) {
+      if (k === n) return true;
+      const g = order[k];
+      for (const r of shuffle(idx.slice())) {
+        if (!used[r] && ok(g, r)) {
+          used[r] = true; res[g] = r;
+          if (step(k + 1)) return true;
+          used[r] = false;
+        }
+      }
+      return false;
+    }
+    return step(0) ? res : null;
+  }
+
+  function stream(s0, s1, n) {
+    let x = (((s0 << 8) | s1) * 2654435761 ^ KEY) >>> 0 || 1;
+    const out = new Uint8Array(n);
+    for (let i = 0; i < n; i++) {
+      x ^= x << 13; x >>>= 0;
+      x ^= x >>> 17;
+      x ^= x << 5;  x >>>= 0;
+      out[i] = (x >>> 8) & 255;
+    }
+    return out;
+  }
+  function crc8(bytes) {
+    let c = 0;
+    for (const b of bytes) {
+      c ^= b;
+      for (let k = 0; k < 8; k++) c = (c & 0x80) ? ((c << 1) ^ 0x07) & 255 : (c << 1) & 255;
+    }
+    return c;
+  }
+  function b32enc(bytes) {
+    let bits = 0, val = 0, out = "";
+    for (const b of bytes) {
+      val = (val << 8) | b; bits += 8;
+      while (bits >= 5) { out += ALPH[(val >>> (bits - 5)) & 31]; bits -= 5; }
+      val &= (1 << bits) - 1;
+    }
+    if (bits > 0) out += ALPH[(val << (5 - bits)) & 31];
+    return out;
+  }
+  function b32dec(str) {
+    let bits = 0, val = 0;
+    const out = [];
+    for (const ch of str) {
+      const i = ALPH.indexOf(ch);
+      if (i < 0) return null;
+      val = (val << 5) | i; bits += 5;
+      if (bits >= 8) { out.push((val >>> (bits - 8)) & 255); bits -= 8; val &= (1 << bits) - 1; }
+    }
+    return Uint8Array.from(out);
+  }
+
+  // padTo: byte length every code in a draw is padded to, so code length gives nothing away.
+  function padLength(names) {
+    const lens = names.map(n => new TextEncoder().encode(n).length).sort((a, b) => b - a);
+    return lens[0] + (lens[1] || 0) + 1;
+  }
+
+  function encode(giver, receiver, padTo) {
+    const raw = new TextEncoder().encode(giver + "\n" + receiver);
+    const plain = new Uint8Array(Math.max(raw.length, padTo || 0));
+    plain.set(raw);
+    const salt = new Uint8Array(2);
+    crypto.getRandomValues(salt);
+    const ks = stream(salt[0], salt[1], plain.length);
+    const bytes = new Uint8Array(plain.length + 3);
+    bytes[0] = salt[0]; bytes[1] = salt[1];
+    for (let i = 0; i < plain.length; i++) bytes[2 + i] = plain[i] ^ ks[i];
+    bytes[bytes.length - 1] = crc8([salt[0], salt[1], ...plain]);
+    const body = b32enc(bytes);
+    return "SANTA-" + body.match(/.{1,4}/g).join("-");
+  }
+
+  function clean(input) {
+    let s = String(input || "").toUpperCase();
+    const m = s.match(/SANTA-([0-9A-Z-]+)/);
+    if (m) s = m[1];
+    else s = s.trim().replace(/^SANTA\b/, "");
+    s = s.replace(/O/g, "0").replace(/[IL]/g, "1").replace(/U/g, "V");
+    return s.replace(/[^0-9A-Z]/g, "");
+  }
+
+  function decode(input) {
+    const bytes = b32dec(clean(input));
+    if (!bytes || bytes.length < 6) return null;
+    const s0 = bytes[0], s1 = bytes[1];
+    const body = bytes.slice(2, bytes.length - 1);
+    const ks = stream(s0, s1, body.length);
+    const plain = body.map((b, i) => b ^ ks[i]);
+    if (crc8([s0, s1, ...plain]) !== bytes[bytes.length - 1]) return null;
+    let text;
+    let end = plain.length;
+    while (end > 0 && plain[end - 1] === 0) end--;
+    try { text = new TextDecoder("utf-8", { fatal: true }).decode(plain.slice(0, end)); } catch (e) { return null; }
+    const parts = text.split("\n");
+    if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
+    return { giver: parts[0], receiver: parts[1] };
+  }
+
+  return { parsePeople, draw, encode, decode, padLength };
+})();
+/* ==/CORE== */
+
+(() => {
+  "use strict";
+  const DEFAULT_LINK = /^https?:$/.test(location.protocol) ? location.origin + location.pathname : "";
+  const KEY_DRAW = "ss-draw-v1", KEY_TAB = "ss-tab", KEY_FORM = "ss-form-v1";
+  const $ = id => document.getElementById(id);
+
+  const store = {
+    get(k) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+    del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+  };
+
+  /* Tabs */
+  const tabs = { reveal: $("tab-reveal"), organize: $("tab-organize") };
+  const panels = { reveal: $("panel-reveal"), organize: $("panel-organize") };
+  function showTab(name) {
+    Object.keys(tabs).forEach(k => {
+      const on = k === name;
+      tabs[k].setAttribute("aria-selected", on ? "true" : "false");
+      panels[k].hidden = !on;
+    });
+    store.set(KEY_TAB, name);
+  }
+  tabs.reveal.addEventListener("click", () => showTab("reveal"));
+  tabs.organize.addEventListener("click", () => showTab("organize"));
+
+  /* Reveal */
+  const tag = $("tag"), tagTo = $("tag-to"), tagName = $("tag-name"), tagNote = $("tag-note");
+  const revealErr = $("reveal-error"), hideBtn = $("hide-btn");
+  function resetTag() {
+    tag.classList.add("is-empty");
+    tag.classList.remove("is-revealed");
+    tagTo.textContent = "Your person's name will appear here";
+    tagName.textContent = "?";
+    tagNote.textContent = "Only you can see it.";
+    hideBtn.hidden = true;
+  }
+  $("reveal-form").addEventListener("submit", e => {
+    e.preventDefault();
+    const raw = $("code-input").value.trim();
+    revealErr.hidden = true;
+    if (!raw) {
+      revealErr.textContent = "Paste your code first. It starts with SANTA-.";
+      revealErr.hidden = false;
+      return;
+    }
+    const r = SS.decode(raw);
+    if (!r) {
+      resetTag();
+      revealErr.textContent = "That code doesn't work. Copy the whole thing from your message, including SANTA- and every dash, and try again.";
+      revealErr.hidden = false;
+      return;
+    }
+    tag.classList.remove("is-empty", "is-revealed");
+    void tag.offsetWidth;
+    tag.classList.add("is-revealed");
+    tagTo.textContent = `Hi ${r.giver}, you're Secret Santa for`;
+    tagName.textContent = r.receiver;
+    tagNote.textContent = "Keep it to yourself!";
+    hideBtn.hidden = false;
+  });
+  hideBtn.addEventListener("click", () => { resetTag(); $("code-input").value = ""; });
+
+  /* Organizer form draft */
+  const fNames = $("names"), fBudget = $("budget"), fWhen = $("when"), fLink = $("link");
+  const draft = store.get(KEY_FORM) || {};
+  fNames.value = draft.names || "";
+  fBudget.value = draft.budget || "";
+  fWhen.value = draft.when || "";
+  fLink.value = draft.link || DEFAULT_LINK;
+  [fNames, fBudget, fWhen, fLink].forEach(el => el.addEventListener("input", () => {
+    store.set(KEY_FORM, { names: fNames.value, budget: fBudget.value, when: fWhen.value, link: fLink.value });
+  }));
+
+  /* Draw */
+  let state = null; // { items: [{name, code, sent}], budget, when, link }
+  const drawErr = $("draw-error");
+
+  $("draw-form").addEventListener("submit", e => {
+    e.preventDefault();
+    drawErr.hidden = true;
+    const parsed = SS.parsePeople(fNames.value);
+    if (parsed.error) { drawErr.textContent = parsed.error; drawErr.hidden = false; return; }
+    const people = parsed.people;
+    const perm = SS.draw(people);
+    if (!perm) { drawErr.textContent = "Couldn't find a fair draw with these couples. Try splitting a line."; drawErr.hidden = false; return; }
+    const padTo = SS.padLength(people.map(p => p.name));
+    state = {
+      items: people.map((p, g) => ({ name: p.name, code: SS.encode(p.name, people[perm[g]].name, padTo), sent: false })),
+      budget: fBudget.value.trim(),
+      when: fWhen.value.trim(),
+      link: fLink.value.trim()
+    };
+    store.set(KEY_DRAW, state);
+    renderResults();
+    $("results").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  });
+
+  function messageFor(item) {
+    const lines = [`🎅 Secret Santa for ${item.name}!`, "", "Your private code:", item.code, ""];
+    lines.push(state.link
+      ? `Open ${state.link} , tap "I got a code" and paste it to see who you're buying a gift for.`
+      : `Open the Secret Santa page, tap "I got a code" and paste it to see who you're buying a gift for.`);
+    if (state.budget || state.when) lines.push("");
+    if (state.budget) lines.push(`Budget: ${state.budget}`);
+    if (state.when) lines.push(`Gift exchange: ${state.when}`);
+    lines.push("", "🤫 Keep it secret!");
+    return lines.join("\n");
+  }
+
+  function updateCount() {
+    const sent = state.items.filter(i => i.sent).length;
+    const c = $("count");
+    c.textContent = sent === state.items.length ? `All ${sent} sent` : `${sent} of ${state.items.length} sent`;
+    c.classList.toggle("is-done", sent === state.items.length);
+  }
+
+  function renderResults() {
+    $("setup").hidden = !!state;
+    $("results").hidden = !state;
+    $("reset-warning").hidden = true;
+    resetArmed = false;
+    $("reset-btn").textContent = "Start over";
+    const list = $("msgs");
+    list.textContent = "";
+    if (!state) return;
+    state.items.forEach((item, i) => {
+      const li = document.createElement("li");
+      li.className = "msg" + (item.sent ? " is-sent" : "");
+
+      const head = document.createElement("div");
+      head.className = "msg-head";
+      const nm = document.createElement("span");
+      nm.className = "msg-name";
+      nm.textContent = item.name;
+      head.append(nm);
+
+      const code = document.createElement("div");
+      code.className = "msg-code";
+      code.textContent = item.code;
+
+      const actions = document.createElement("div");
+      actions.className = "msg-actions";
+      const copy = document.createElement("button");
+      copy.type = "button";
+      copy.className = "btn btn-primary btn-sm";
+      copy.textContent = "Copy message";
+
+      const lab = document.createElement("label");
+      lab.className = "check";
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.id = "sent-" + i;
+      cb.checked = item.sent;
+      lab.append(cb, document.createTextNode("Sent"));
+      actions.append(copy, lab);
+
+      const fbNote = document.createElement("p");
+      fbNote.className = "fallback-note";
+      fbNote.hidden = true;
+      fbNote.textContent = "Your browser blocked automatic copying. The message is selected below: copy it from there.";
+      const ta = document.createElement("textarea");
+      ta.readOnly = true;
+      ta.hidden = true;
+      ta.id = "msg-text-" + i;
+      ta.setAttribute("aria-label", "Message for " + item.name);
+
+      copy.addEventListener("click", async () => {
+        const text = messageFor(item);
+        try {
+          await navigator.clipboard.writeText(text);
+          copy.textContent = "Copied ✓";
+          setTimeout(() => { copy.textContent = "Copy message"; }, 2000);
+        } catch (err) {
+          ta.value = text;
+          ta.hidden = false;
+          fbNote.hidden = false;
+          ta.focus();
+          ta.select();
+          ta.setSelectionRange(0, text.length);
+        }
+      });
+      cb.addEventListener("change", () => {
+        item.sent = cb.checked;
+        li.classList.toggle("is-sent", item.sent);
+        store.set(KEY_DRAW, state);
+        updateCount();
+      });
+
+      li.append(head, code, actions, fbNote, ta);
+      list.append(li);
+    });
+    updateCount();
+  }
+
+  let resetArmed = false;
+  $("reset-btn").addEventListener("click", () => {
+    if (!resetArmed) {
+      resetArmed = true;
+      $("reset-warning").hidden = false;
+      $("reset-btn").textContent = "Yes, throw it away";
+      return;
+    }
+    state = null;
+    store.del(KEY_DRAW);
+    renderResults();
+  });
+
+  /* Start */
+  state = store.get(KEY_DRAW);
+  if (state && !Array.isArray(state.items)) state = null;
+  renderResults();
+  showTab(store.get(KEY_TAB) === "organize" ? "organize" : "reveal");
+})();
+</script>
+</body>
+</html>
